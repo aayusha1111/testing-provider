@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:provider_test/features/assignment/provider/assignment_provider.dart';
 import 'package:provider_test/features/core/utils/helper.dart';
 import 'package:provider_test/features/core/utils/view_state.dart';
 import 'package:provider_test/widgets/custom_textform_field.dart';
+
 
 class AssignedPage extends StatefulWidget {
   const AssignedPage({super.key});
@@ -13,45 +15,46 @@ class AssignedPage extends StatefulWidget {
 }
 
 class _AssignedPageState extends State<AssignedPage> {
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => Provider.of<AssignmentProvider>(
-        context,
-        listen: false,
-      ).getAssignment(),
-    );
+    Future.microtask(() {
+      Provider.of<AssignmentProvider>(context, listen: false).getAssignment();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       body: Consumer<AssignmentProvider>(
         builder: (context, provider, child) => Stack(
           children: [
-
             Column(
               children: [
-                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                // Search Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: CustomTextformfield(
                     hintText: 'Search assignments...',
                     prefixIcon: const Icon(Icons.search),
                     onChanged: (value) {
-                      // You can handle search logic later
+                      setState(() {
+                        _searchQuery = value.toLowerCase();
+                      });
                     },
                   ),
                 ),
-                Expanded(child: assignedUi(provider)),
 
+                // Assignment List
+                Expanded(child: assignedUi(provider)),
               ],
             ),
-             
-            provider.assignmentStatus == ViewState.loading
-                ? backdropFilter(context)
-                : const SizedBox(),
+
+            // Loading Overlay
+            if (provider.assignmentStatus == ViewState.loading)
+              backdropFilter(context),
           ],
         ),
       ),
@@ -59,7 +62,14 @@ class _AssignedPageState extends State<AssignedPage> {
   }
 
   Widget assignedUi(AssignmentProvider provider) {
-    if (provider.assignmentList.isEmpty) {
+    // Filter assignments by search query
+    final filteredList = provider.assignmentList.where((assignment) {
+      final subject = assignment.subject?.name?.toLowerCase() ?? '';
+      final faculty = assignment.faculty?.toLowerCase() ?? '';
+      return subject.contains(_searchQuery) || faculty.contains(_searchQuery);
+    }).toList();
+
+    if (filteredList.isEmpty) {
       return const Center(
         child: Text(
           "No assigned assignments yet.",
@@ -70,9 +80,10 @@ class _AssignedPageState extends State<AssignedPage> {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      itemCount: provider.assignmentList.length,
+      itemCount: filteredList.length,
       itemBuilder: (context, index) {
-        final assignment = provider.assignmentList[index];
+        final assignment = filteredList[index];
+
         return Card(
           elevation: 2,
           margin: const EdgeInsets.symmetric(vertical: 6),
@@ -81,196 +92,116 @@ class _AssignedPageState extends State<AssignedPage> {
           ),
           child: Padding(
             padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
+            child: Consumer<UserRoleProvider>(
+              builder: (context, roleProvider, _) {
+                final isTeacherOrAdmin = roleProvider.role == "admin" || roleProvider.role == "teacher";
+
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Faculty
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Faculty: ",
+                    // Top Row (Faculty, Semester, and Action Buttons)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${assignment.faculty ?? ''} | ${assignment.semester ?? ''}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontSize: 14,
+                            color: Colors.blue,
+                            fontSize: 16,
                           ),
-                          children: [
-                            TextSpan(
-                              text: assignment.faculty ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.normal,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
                         ),
-                      ),
-                    ),
-                
-                    // Semester
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Semester: ",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontSize: 14,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: assignment.semester ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.normal,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                
-                    // Subject
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Subject: ",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontSize: 14,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: assignment.subject?.name ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.normal,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                
-                    // Description
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Description: ",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontSize: 14,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: assignment.description ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.normal,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                
-                    // Deadline
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Deadline: ",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontSize: 14,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: assignment.deadline ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.normal,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                
-                    Consumer<UserRoleProvider>(
-                      builder: (context, roleProvider, _) {
-                        if (roleProvider.role == "admin" ||
-                            roleProvider.role == "teacher") {
-                          return Row(
+                        if (isTeacherOrAdmin)
+                          Row(
                             children: [
                               IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.green),
+                                onPressed: () {
+                                  // TODO: Implement edit logic here
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_forever_outlined, color: Colors.red),
                                 onPressed: () async {
                                   if (assignment.assignmentId != null) {
                                     bool? confirm = await _showConfirmDialog(
                                       context,
                                       title: "Delete Assignment",
-                                      message:
-                                          "This will permanently delete this assignment.",
+                                      message: "This will permanently delete this assignment.",
                                       confirmText: "Delete",
                                       confirmColor: Colors.red,
                                       icon: Icons.delete_outline_rounded,
                                     );
-                
+
                                     if (confirm == true) {
                                       await Provider.of<AssignmentProvider>(
                                         context,
                                         listen: false,
                                       ).deleteAssignment(assignment.assignmentId!);
-                
+
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-                                          content: Text(
-                                            "Assignment deleted successfully.",
-                                          ),
+                                          content: Text("Assignment deleted successfully."),
                                         ),
                                       );
                                     }
                                   }
                                 },
-                                icon: const Icon(
-                                  Icons.delete_forever_outlined,
-                                  color: Colors.red,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              IconButton(
-                                onPressed: () async {
-                                  
-                                },
-                                icon: const Icon(Icons.edit, color: Colors.green),
                               ),
                             ],
-                          );
-                        }
-                        return const SizedBox();
-                      },
+                          ),
+                      ],
                     ),
-                   
+                    const SizedBox(height: 8),
+
+                    // Subject
+                    Text(
+                      assignment.subject?.name ?? '',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Description
+                    if (assignment.description != null && assignment.description!.isNotEmpty)
+                      Text(
+                        assignment.description!,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+
+                    // Deadline
+                    Row(
+                      children: [
+                        const Icon(Icons.punch_clock, size: 18, color: Colors.red),
+                        const SizedBox(width: 6),
+                        Text(
+                          assignment.deadline != null && assignment.deadline!.isNotEmpty
+                              ? DateFormat('EEEE, dd MMM yyyy')
+                                  .format(DateTime.parse(assignment.deadline!))
+                              : 'No deadline',
+                          style: const TextStyle(
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
-                ),
-              ],
+                );
+              },
             ),
           ),
         );
       },
     );
   }
-   Future<bool?> _showConfirmDialog(
+
+  Future<bool?> _showConfirmDialog(
     BuildContext context, {
     required String title,
     required String message,
