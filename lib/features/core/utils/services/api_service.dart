@@ -77,4 +77,34 @@ class ApiService {
       return ApiResponse(state: ViewState.error, errorMessage: e.toString());
     }
   }
+
+
+   Future<ApiResponse> patch(
+    String endpoint, {
+    dynamic data,
+    String? token,
+  }) async {
+    try {
+      if (token != null && token.isNotEmpty) {
+        _dio.options.headers['Authorization'] = 'Bearer $token';
+      }
+      final response = await _dio.patch(endpoint, data: data);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ApiResponse apiResponse = ApiResponse(
+          state: ViewState.success,
+          data: response.data,
+        );
+        return apiResponse ;
+      } else {
+        ApiResponse apiResponse = ApiResponse(state: ViewState.error);
+        return apiResponse;
+      }
+    } on DioException catch (e) {
+      ApiResponse apiResponse = ApiResponse(
+        state: ViewState.error,
+        errorMessage: e.response?.data['error']?.toString() ?? e.message,
+      );
+      return apiResponse;
+    }
+  }
 }

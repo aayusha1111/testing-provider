@@ -96,6 +96,44 @@ class AssignmentProvider extends ChangeNotifier {
     }
   }
 
+
+
+  //update Assignment
+  ViewState updateAssignmentStatus = ViewState.idle;
+  
+
+  setUpdateAssignmentState(ViewState value) {
+    createAssignmentStatus = value;
+    notifyListeners();
+  }
+
+  Future<void> updateAssignment(String? assignmnetId) async {
+    setCreateAssignmentState(ViewState.loading);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('auth_token');
+
+    CreateAssignment createAssignment = CreateAssignment(
+      title: title,
+      description: description,
+      subjectId: selectedSubjectId,
+      deadline: deadline,
+      semester: semester,
+      faculty: faculty,
+    );
+    ApiResponse response = await service.patch(
+      AppApi.updateAssignment+assignmnetId!,
+      data: createAssignment.toJson(),
+      token: token,
+    );
+
+    if (response.state == ViewState.success) {
+      setCreateAssignmentState(ViewState.success);
+    } else if (response.state == ViewState.error) {
+      errorMessage = response.errorMessage;
+      setCreateAssignmentState(ViewState.error);
+    }
+  }
+
   // Status for loading, success, error
   ViewState _assignmentStatus = ViewState.idle;
   ViewState get assignmentStatus => _assignmentStatus;

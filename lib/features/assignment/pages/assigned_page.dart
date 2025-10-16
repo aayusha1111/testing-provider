@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:provider_test/features/assignment/pages/add_assignment.dart';
 import 'package:provider_test/features/assignment/provider/assignment_provider.dart';
 import 'package:provider_test/features/core/utils/helper.dart';
 import 'package:provider_test/features/core/utils/view_state.dart';
 import 'package:provider_test/widgets/custom_textform_field.dart';
-
 
 class AssignedPage extends StatefulWidget {
   const AssignedPage({super.key});
@@ -35,7 +35,10 @@ class _AssignedPageState extends State<AssignedPage> {
               children: [
                 // Search Bar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
                   child: CustomTextformfield(
                     hintText: 'Search assignments...',
                     prefixIcon: const Icon(Icons.search),
@@ -94,7 +97,9 @@ class _AssignedPageState extends State<AssignedPage> {
             padding: const EdgeInsets.all(14),
             child: Consumer<UserRoleProvider>(
               builder: (context, roleProvider, _) {
-                final isTeacherOrAdmin = roleProvider.role == "admin" || roleProvider.role == "teacher";
+                final isTeacherOrAdmin =
+                    roleProvider.role == "admin" ||
+                    roleProvider.role == "teacher";
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,45 +116,58 @@ class _AssignedPageState extends State<AssignedPage> {
                             fontSize: 16,
                           ),
                         ),
-                        if (isTeacherOrAdmin)
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.green),
-                                onPressed: () {
-                                  // TODO: Implement edit logic here
-                                },
+
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.green),
+                              onPressed: () {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (context) => AddAssignment(assignment: assignment,),
+                                  ),
+                                  (Route<dynamic> route) => false,
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_forever_outlined,
+                                color: Colors.red,
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_forever_outlined, color: Colors.red),
-                                onPressed: () async {
-                                  if (assignment.assignmentId != null) {
-                                    bool? confirm = await _showConfirmDialog(
+                              onPressed: () async {
+                                if (assignment.assignmentId != null) {
+                                  bool? confirm = await _showConfirmDialog(
+                                    context,
+                                    title: "Delete Assignment",
+                                    message:
+                                        "This will permanently delete this assignment.",
+                                    confirmText: "Delete",
+                                    confirmColor: Colors.red,
+                                    icon: Icons.delete_outline_rounded,
+                                  );
+
+                                  if (confirm == true) {
+                                    await Provider.of<AssignmentProvider>(
                                       context,
-                                      title: "Delete Assignment",
-                                      message: "This will permanently delete this assignment.",
-                                      confirmText: "Delete",
-                                      confirmColor: Colors.red,
-                                      icon: Icons.delete_outline_rounded,
+                                      listen: false,
+                                    ).deleteAssignment(
+                                      assignment.assignmentId!,
                                     );
 
-                                    if (confirm == true) {
-                                      await Provider.of<AssignmentProvider>(
-                                        context,
-                                        listen: false,
-                                      ).deleteAssignment(assignment.assignmentId!);
-
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text("Assignment deleted successfully."),
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Assignment deleted successfully.",
                                         ),
-                                      );
-                                    }
+                                      ),
+                                    );
                                   }
-                                },
-                              ),
-                            ],
-                          ),
+                                }
+                              },
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -166,28 +184,31 @@ class _AssignedPageState extends State<AssignedPage> {
                     const SizedBox(height: 6),
 
                     // Description
-                    if (assignment.description != null && assignment.description!.isNotEmpty)
+                    if (assignment.description != null &&
+                        assignment.description!.isNotEmpty)
                       Text(
                         assignment.description!,
-                        style: const TextStyle(
-                          color: Colors.black87,
-                        ),
+                        style: const TextStyle(color: Colors.black87),
                       ),
                     const SizedBox(height: 8),
 
                     // Deadline
                     Row(
                       children: [
-                        const Icon(Icons.punch_clock, size: 18, color: Colors.red),
+                        const Icon(
+                          Icons.punch_clock,
+                          size: 18,
+                          color: Colors.red,
+                        ),
                         const SizedBox(width: 6),
                         Text(
-                          assignment.deadline != null && assignment.deadline!.isNotEmpty
-                              ? DateFormat('EEEE, dd MMM yyyy')
-                                  .format(DateTime.parse(assignment.deadline!))
+                          assignment.deadline != null &&
+                                  assignment.deadline!.isNotEmpty
+                              ? DateFormat(
+                                  'EEEE, dd MMM yyyy',
+                                ).format(DateTime.parse(assignment.deadline!))
                               : 'No deadline',
-                          style: const TextStyle(
-                            color: Colors.red,
-                          ),
+                          style: const TextStyle(color: Colors.red),
                         ),
                       ],
                     ),

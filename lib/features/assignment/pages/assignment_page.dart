@@ -138,11 +138,11 @@ class _AssignmentPageState extends State<AssignmentPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const AddAssignment(),
+                builder: (context) =>  AddAssignment(),
               ),
             );
           },
-          backgroundColor: primaryColor,
+          backgroundColor: secondaryColor,
           child: const Icon(Icons.add, size: 30, color: Colors.white),
         );
       } else {

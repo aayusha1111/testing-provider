@@ -39,6 +39,10 @@ String facultyValidatorStr="Please enter the faculty";
    
    String assignmentCreatedMessage="Assignment created successfully";
    String assignmenterrorMessage="Assignmet failed to create";
+   String createLabel="Create";
+   String updateLabel="Update";
+   String assignmetUpdatedMessage="Assignment updated successfully";
+   String assignmentUpdatederrorMessage="Assignmet failed to update";
 
 
 
